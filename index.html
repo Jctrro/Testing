@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modern Music Player</title>
+  <!-- Bootstrap CSS for layut and styling -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Bootstrap Icons for play/pause/skip -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+  <style>
+    /* Embedded CSS */
+
+    body {
+      background: #f2f7fa;
+    }
+
+    /* Extra polish for playlist active state */
+    #playlist .active {
+      background: #eaf3fa !important;
+      color: #2687c5 !important;
+      font-weight: bold;
+      border: none;
+    }
+
+    /* Hide audio controls */
+    audio {
+      display: none;
+    }
+
+    /* Responsive card sizing and padding */
+    .card {
+      max-width: 400px;
+      width: 100%;
+      padding: 1.5rem 1rem;
+    }
+
+    @media (min-width: 576px) {
+      .card {
+        padding: 2rem 1.5rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      #title {
+        font-size: 1.3em;
+      }
+      #playlist .list-group-item {
+        font-size: 1em;
+        padding: 0.8em 1.2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div
+    class="container d-flex justify-content-center align-items-center min-vh-100 bg-light"
+  >
+    <div class="card shadow-lg rounded-4">
+      <div class="text-center mb-3">
+        <h2 id="title" class="fw-bold mb-1">Title</h2>
+        <span id="artist" class="text-secondary"></span>
+        <div id="duration" class="small mt-1">00:00 / 00:00</div>
+      </div>
+
+      <audio id="audio"></audio>
+
+      <div class="d-flex justify-content-center gap-3 mb-3">
+        <button
+          class="btn btn-light btn-lg rounded-circle"
+          id="prev"
+          title="Previous Track"
+          aria-label="Previous Track"
+        >
+          <i class="bi bi-skip-backward-fill"></i>
+        </button>
+        <button
+          class="btn btn-primary btn-lg rounded-circle"
+          id="play-pause"
+          title="Play/Pause"
+          aria-label="Play or Pause"
+        >
+          <i class="bi bi-play-fill"></i>
+        </button>
+        <button
+          class="btn btn-light btn-lg rounded-circle"
+          id="next"
+          title="Next Track"
+          aria-label="Next Track"
+        >
+          <i class="bi bi-skip-forward-fill"></i>
+        </button>
+      </div>
+
+      <input
+        type="range"
+        id="progress"
+        value="0"
+        max="100"
+        class="form-range mb-4"
+        aria-label="Track progress"
+      />
+
+      <div class="d-flex align-items-center mb-3">
+        <i class="bi bi-volume-up-fill me-2"></i>
+        <input
+          type="range"
+          id="volume"
+          min="0"
+          max="1"
+          step="0.01"
+          value="1"
+          class="form-range flex-grow-1"
+          aria-label="Volume"
+        />
+      </div>
+
+      <hr />
+
+      <div id="playlist" class="list-group" role="list"></div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded JavaScript
+
+    const tracks = [
+      { src: "song1.mp3", title: "First Song", artist: "Artist 1" },
+      { src: "song2.mp3", title: "Second Song", artist: "Artist 2" },
+      { src: "song3.mp3", title: "Third Song", artist: "Artist 3" },
+    ];
+
+    let currentTrack = 0;
+    const audio = document.getElementById("audio");
+    const title = document.getElementById("title");
+    const artist = document.getElementById("artist");
+    const duration = document.getElementById("duration");
+    const playPauseBtn = document.getElementById("play-pause");
+    const nextBtn = document.getElementById("next");
+    const prevBtn = document.getElementById("prev");
+    const progress = document.getElementById("progress");
+    const volume = document.getElementById("volume");
+    const playlistDiv = document.getElementById("playlist");
+
+    // Load track metadata and update UI
+    function loadTrack(idx) {
+      const track = tracks[idx];
+      audio.src = track.src;
+      title.textContent = track.title;
+      artist.textContent = track.artist;
+      audio.load();
+      highlightPlaylist();
+      updatePlayPauseIcon();
+    }
+
+    // Build playlist UI dynamically and highlight current track
+    function highlightPlaylist() {
+      playlistDiv.innerHTML = "";
+      tracks.forEach((track, idx) => {
+        const btn = document.createElement("button");
+        btn.className =
+          "list-group-item list-group-item-action" +
+          (idx === currentTrack ? " active" : "");
+        btn.textContent = `${track.title} - ${track.artist}`;
+        btn.setAttribute("role", "listitem");
+        btn.onclick = () => {
+          currentTrack = idx;
+          loadTrack(currentTrack);
+          audio.play();
+        };
+        playlistDiv.appendChild(btn);
+      });
+    }
+
+    // Time formatting helper (seconds to MM:SS)
+    function formatTime(sec) {
+      if (isNaN(sec)) return "00:00";
+      const mins = Math.floor(sec / 60) || 0;
+      const secs = Math.floor(sec % 60) || 0;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    // Update progress bar and display elapsed/duration
+    function updateProgress() {
+      if (audio.duration) {
+        progress.value = (audio.currentTime / audio.duration) * 100;
+        duration.textContent =
+          formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+      } else {
+        duration.textContent = "00:00 / 00:00";
+      }
+    }
+
+    // Update play/pause icon on button
+    function updatePlayPauseIcon() {
+      const icon = playPauseBtn.querySelector("i");
+      if (audio.paused) {
+        icon.classList.remove("bi-pause-fill");
+        icon.classList.add("bi-play-fill");
+      } else {
+        icon.classList.remove("bi-play-fill");
+        icon.classList.add("bi-pause-fill");
+      }
+    }
+
+    // Play/Pause toggle button behavior
+    playPauseBtn.onclick = () => {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    };
+
+    // Update icon on play/pause events
+    audio.onplay = updatePlayPauseIcon;
+    audio.onpause = updatePlayPauseIcon;
+
+    // Autoplay next track when current ends
+    audio.onended = () => {
+      currentTrack = (currentTrack + 1) % tracks.length;
+      loadTrack(currentTrack);
+      audio.play();
+    };
+
+    // Seek on progress bar input
+    progress.oninput = () => {
+      if (audio.duration) {
+        audio.currentTime = (progress.value / 100) * audio.duration;
+      }
+    };
+
+    // Update progress bar as audio plays
+    audio.ontimeupdate = updateProgress;
+
+    // Next track button
+    nextBtn.onclick = () => {
+      currentTrack = (currentTrack + 1) % tracks.length;
+      loadTrack(currentTrack);
+      audio.play();
+    };
+
+    // Previous track button
+    prevBtn.onclick = () => {
+      currentTrack = (currentTrack - 1 + tracks.length) % tracks.length;
+      loadTrack(currentTrack);
+      audio.play();
+    };
+
+    // Volume control
+    volume.oninput = () => {
+      audio.volume = volume.value;
+    };
+
+    // Initialize progress and duration display on metadata load
+    audio.onloadedmetadata = () => {
+      updateProgress();
+      duration.textContent =
+        formatTime(audio.currentTime) + " / " + formatTime(audio.duration);
+    };
+
+    // Initialize player on page load
+    loadTrack(currentTrack);
+  </script>
+</body>
+</html>
